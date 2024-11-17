@@ -21,22 +21,60 @@ flask_app = Flask(__name__)
 handler = SlackRequestHandler(app)
 
 # Slackのイベントポイント設定
-@flask_app.route("/slack/events", methods=["POST"])
-def slack_events():
-    return handler.handle(request)
+def get_bot_user_id():
+    """
+    Get the bot user ID from the Slack API
+    Returns:
+        str: The bot user ID
+    """
+    try:
+        # Slack クライアントを初期化
+        slack_client = WebClient(token=SLACK_BOT_TOKEN)
+        response = slack_client.auth_test() # ユーザー情報を取得
+        return response["user_id"]
+    except SlackApiError as e: # Slack API エラーが発生した場合
+        assert e.response["error"] # エラーメッセージを表示
 
-# カスタム関数の定義(botの機能 : 入力されたテキストを大文字に変換)
+
 def my_function(text):
+    """
+    Custom function 
+    in function, the input text to uppercase
+
+    Args:
+        text (str): input text
+
+    Returns:
+        str: text to uppercase
+    """
     response = text.upper()
     return response
 
-# イベントリスナーの設定
 @app.event("app_mention")
-def handle_mentions(body, say):
+def handle_app_mentions(body, say):
+    """
+    Event listener for mentions in Slack.
+    When bot is mentioned, the function is called.
+    the function will convert the input text to uppercase.
+
+    Args:
+        body (dict): The event data received from Slack
+        say (callable): A function for sending a message back to Slack
+    """
     text = body["event"]["text"]
+
     mention = f"<@{SLACK_BOT_USER_ID}>"
     text = text.replace(mention, "").strip()
     response = my_function(text)
     say(response)
 
+@flask_app.route("/slack/events", methods=["POST"])
+def slack_events():
+    """
+    Route for handling Slack events.
+    This function passes the income HTTP request to the SlackRequestHandler for processing.
 
+    Returns:
+        Response: The result of handling the request
+    """
+    return handler.handle(request)
