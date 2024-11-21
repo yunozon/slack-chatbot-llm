@@ -78,3 +78,7 @@ def slack_events():
         Response: The result of handling the request
     """
     return handler.handle(request)
+
+# Run Flask app
+if __name__ == "__main__":
+    flask_app.run()
