@@ -13,6 +13,7 @@ openai = "^1.54.3"
 slack-sdk = "^3.33.3"
 slack-bolt = "^1.21.2"
 flask = "^3.0.3"
+langchain-openai = "^0.2.9"
 
 
 [build-system]

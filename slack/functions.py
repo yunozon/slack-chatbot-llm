@@ -1,6 +1,7 @@
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.chains import LLMChain
 from dotenv import find_dotenv, load_dotenv
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain.prompts.chat import (
     ChatPromptTemplate,
     SystemMessagePromptTemplate,
@@ -12,4 +13,38 @@ load_dotenv(find_dotenv())
 
 # メールを下書きを作成する関数を定義
 def draft_email(user_input):
-    pass
+    """
+    ユーザーからの入力に基づいて、メールの下書きを作成する。
+    Args:
+        user_input (str): ユーザーからの入力(メッセージ内容)
+    Returns:
+        str: 作成されたメールの下書き
+    """
+    # チャットモデルの初期化
+    chat = ChatOpenAI(model_name = "gpt-3.5-turbo", temperature = 1.0)
+
+    # システムメッセージのプロンプトを作成
+    template = """
+
+    あなたは新しいメールに基づいて返信するメールの草案を作成する有用なアシスタントです。
+    ユーザーが迅速に完璧なメール返信を出来るようにサポートします。
+    返信は簡潔で要点を押さえ、元のメールスタイルを模倣して、トーンを合わせてください。
+    """
+    # システムメッセージのプロンプトを作成
+    system_message_prompt = SystemMessagePromptTemplate.from_template(template)
+
+    # ヒューマンメッセージプロンプトの作成
+    human_template = "以下は返信するメールです。ユーザーのコメントも考慮して返信してください: {user_input}"
+    human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+
+    # チャットプロンプトを組み立てる
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [system_message_prompt, human_message_prompt],
+    )
+
+    # LLMチェーンを作成 下記のコードは非推奨(バージョン理由により)
+     # chain = LLMChain(llm=chat, prompt=chat_prompt)
+    # response = chain.run(user_input=user_input, signature=signature)
+    response = (chat_prompt | chat).invoke(input=user_input)
+
+    return response

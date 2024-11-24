@@ -5,6 +5,7 @@ from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 from dotenv import find_dotenv, load_dotenv
 from flask import Flask, request
+from functions import draft_email # 関数をインポート
 
 # .envファイルから環境変数を読み込む
 load_dotenv(find_dotenv())
@@ -12,6 +13,7 @@ load_dotenv(find_dotenv())
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 SLACK_BOT_USER_ID = os.environ["SLACK_BOT_USER_ID"]
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 
 # Slackアプリを初期化
 app = App(token=SLACK_BOT_TOKEN, signing_secret=SLACK_SIGNING_SECRET)
@@ -35,38 +37,24 @@ def get_bot_user_id():
     except SlackApiError as e: # Slack API エラーが発生した場合
         assert e.response["error"] # エラーメッセージを表示
 
-
-def my_function(text):
-    """
-    Custom function 
-    in function, the input text to uppercase
-
-    Args:
-        text (str): input text
-
-    Returns:
-        str: text to uppercase
-    """
-    response = text.upper()
-    return response
-
 @app.event("app_mention")
-def handle_app_mentions(body, say):
+def handle_mentions(body, say):
     """
-    Event listener for mentions in Slack.
-    When bot is mentioned, the function is called.
-    the function will convert the input text to uppercase.
+    Slack内でBotがメンションされたときの処理を行う関数
+    メンションされたとき、メッセージを受け取り、draft_email関数を使ってメールの下書きを作成する。
 
     Args:
-        body (dict): The event data received from Slack
-        say (callable): A function for sending a message back to Slack
+        body (dict): Slackイベント情報
+        say (function): Slackにメッセージを送信する関数
     """
     text = body["event"]["text"]
 
     mention = f"<@{SLACK_BOT_USER_ID}>"
-    text = text.replace(mention, "").strip()
-    response = my_function(text)
-    say(response)
+    text = text.replace(mention, "").strip() # textでmentionが含まれているので、mentionを削除
+    response = draft_email(text)
+    # AIMessageオブジェクトからテキストを取得
+    response_text = response.content if hasattr(response, 'content') else str(response)
+    say(response_text)
 
 @flask_app.route("/slack/events", methods=["POST"])
 def slack_events():
