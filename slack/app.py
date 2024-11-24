@@ -5,7 +5,7 @@ from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 from dotenv import find_dotenv, load_dotenv
 from flask import Flask, request
-from functions import draft_email # 関数をインポート
+import functions # 関数をインポート
 
 # .envファイルから環境変数を読み込む
 load_dotenv(find_dotenv())
@@ -51,7 +51,8 @@ def handle_mentions(body, say):
 
     mention = f"<@{SLACK_BOT_USER_ID}>"
     text = text.replace(mention, "").strip() # textでmentionが含まれているので、mentionを削除
-    response = draft_email(text)
+    response = functions.draft_email_with_gemini(text) # geminiでのメール下書き
+    # response = functions.draft_email_with_chatgpt(text) # chatgptでのメール下書き
     # AIMessageオブジェクトからテキストを取得
     response_text = response.content if hasattr(response, 'content') else str(response)
     say(response_text)
